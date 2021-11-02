@@ -77,13 +77,19 @@ public class NamesrvController {
 
         this.kvConfigManager.load();
 
+        // 这里才是初始化 netty的重点，构建网络服务器的组件
         this.remotingServer = new NettyRemotingServer(this.nettyServerConfig, this.brokerHousekeepingService);
 
+        // 下面的是netty的工作线程池
         this.remotingExecutor =
             Executors.newFixedThreadPool(nettyServerConfig.getServerWorkerThreads(), new ThreadFactoryImpl("RemotingExecutorThread_"));
 
+        // 就是把工作线程池交给netty服务器
         this.registerProcessor();
 
+        // 就是执行定时任务的
+        // scanNotActiveBroker 扫描没有发送心跳的broker
+        // 这是后台运行的线程
         this.scheduledExecutorService.scheduleAtFixedRate(new Runnable() {
 
             @Override

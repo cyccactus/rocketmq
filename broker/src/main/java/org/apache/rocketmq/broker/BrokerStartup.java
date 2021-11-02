@@ -90,6 +90,7 @@ public class BrokerStartup {
     public static BrokerController createBrokerController(String[] args) {
         System.setProperty(RemotingCommand.REMOTING_VERSION_KEY, Integer.toString(MQVersion.CURRENT_VERSION));
 
+        // 下面的两个if是设置netty网络通信缓冲的大小
         if (null == System.getProperty(NettySystemConfig.COM_ROCKETMQ_REMOTING_SOCKET_SNDBUF_SIZE)) {
             NettySystemConfig.socketSndbufSize = 131072;
         }
@@ -107,13 +108,18 @@ public class BrokerStartup {
                 System.exit(-1);
             }
 
+            // 下面三行代码是 broker的核心配置类
+            // broker的配置、netty服务器的配置、netty客户端的配置
             final BrokerConfig brokerConfig = new BrokerConfig();
             final NettyServerConfig nettyServerConfig = new NettyServerConfig();
             final NettyClientConfig nettyClientConfig = new NettyClientConfig();
 
+            // 这是netty客户端是否使用 tls 加密传输之类的
             nettyClientConfig.setUseTLS(Boolean.parseBoolean(System.getProperty(TLS_ENABLE,
                 String.valueOf(TlsSystemConfig.tlsMode == TlsMode.ENFORCING))));
             nettyServerConfig.setListenPort(10911);
+            // broker关键的配置组件
+            // 是 broker用来存储消息的一些配置信息
             final MessageStoreConfig messageStoreConfig = new MessageStoreConfig();
 
             if (BrokerRole.SLAVE == messageStoreConfig.getBrokerRole()) {
@@ -178,10 +184,12 @@ public class BrokerStartup {
                     break;
             }
 
+            // 判断是否基于 Dledger来管理主从同步和CommitLog的
             if (messageStoreConfig.isEnableDLegerCommitLog()) {
                 brokerConfig.setBrokerId(-1);
             }
 
+            // 这是 HA相关监听的端口
             messageStoreConfig.setHaListenPort(nettyServerConfig.getListenPort() + 1);
             LoggerContext lc = (LoggerContext) LoggerFactory.getILoggerFactory();
             JoranConfigurator configurator = new JoranConfigurator();
@@ -219,6 +227,7 @@ public class BrokerStartup {
             // remember all configs to prevent discard
             controller.getConfiguration().registerConfig(properties);
 
+            // 初始化 brokerController
             boolean initResult = controller.initialize();
             if (!initResult) {
                 controller.shutdown();

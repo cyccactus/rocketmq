@@ -26,6 +26,9 @@ import org.apache.rocketmq.common.constant.LoggerName;
 import org.apache.rocketmq.logging.InternalLogger;
 import org.apache.rocketmq.logging.InternalLoggerFactory;
 
+/**
+ * 其实这里面也没啥，都是一些相关的配置信息
+ */
 public class NamesrvConfig {
     private static final InternalLogger log = InternalLoggerFactory.getLogger(LoggerName.NAMESRV_LOGGER_NAME);
 
@@ -34,6 +37,7 @@ public class NamesrvConfig {
     private String configStorePath = System.getProperty("user.home") + File.separator + "namesrv" + File.separator + "namesrv.properties";
     private String productEnvName = "center";
     private boolean clusterTest = false;
+    // 是否支持有序消息，默认不支持
     private boolean orderMessageEnable = false;
 
     public boolean isOrderMessageEnable() {

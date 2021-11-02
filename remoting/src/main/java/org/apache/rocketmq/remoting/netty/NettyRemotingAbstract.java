@@ -405,6 +405,9 @@ public abstract class NettyRemotingAbstract {
         }
     }
 
+    /**
+     * 基于netty 创建channel后，发送网络请求出去
+     */
     public RemotingCommand invokeSyncImpl(final Channel channel, final RemotingCommand request,
         final long timeoutMillis)
         throws InterruptedException, RemotingSendRequestException, RemotingTimeoutException {
@@ -431,6 +434,7 @@ public abstract class NettyRemotingAbstract {
                 }
             });
 
+            // 核心就是这，等待请求的响应结果回来
             RemotingCommand responseCommand = responseFuture.waitResponse(timeoutMillis);
             if (null == responseCommand) {
                 if (responseFuture.isSendRequestOK()) {

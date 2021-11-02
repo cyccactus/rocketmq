@@ -110,6 +110,9 @@ public class BrokerOuterAPI {
         this.remotingClient.updateNameServerAddressList(lst);
     }
 
+    /**
+     * 下面就是 网络级别的broker注册了
+     */
     public List<RegisterBrokerResult> registerBrokerAll(
         final String clusterName,
         final String brokerAddr,
@@ -122,10 +125,13 @@ public class BrokerOuterAPI {
         final int timeoutMills,
         final boolean compressed) {
 
+        // 这里放的是向每个NameServer注册返回结果的集合
         final List<RegisterBrokerResult> registerBrokerResultList = new CopyOnWriteArrayList<>();
+        // NameServer的地址列表
         List<String> nameServerAddressList = this.remotingClient.getNameServerAddressList();
         if (nameServerAddressList != null && nameServerAddressList.size() > 0) {
 
+            // 构建网络请求头
             final RegisterBrokerRequestHeader requestHeader = new RegisterBrokerRequestHeader();
             requestHeader.setBrokerAddr(brokerAddr);
             requestHeader.setBrokerId(brokerId);
@@ -134,18 +140,23 @@ public class BrokerOuterAPI {
             requestHeader.setHaServerAddr(haServerAddr);
             requestHeader.setCompressed(compressed);
 
+            // 网络请求体
             RegisterBrokerBody requestBody = new RegisterBrokerBody();
             requestBody.setTopicConfigSerializeWrapper(topicConfigWrapper);
             requestBody.setFilterServerList(filterServerList);
             final byte[] body = requestBody.encode(compressed);
             final int bodyCrc32 = UtilAll.crc32(body);
             requestHeader.setBodyCrc32(bodyCrc32);
+
+            // 搞了个 countDownLatch
+            // 意思就是：要把所有的broker都注册到所有的NameServer才能继续往下走
             final CountDownLatch countDownLatch = new CountDownLatch(nameServerAddressList.size());
             for (final String namesrvAddr : nameServerAddressList) {
                 brokerOuterExecutor.execute(new Runnable() {
                     @Override
                     public void run() {
                         try {
+                            // 这里是真正执行注册broker到NameServer
                             RegisterBrokerResult result = registerBroker(namesrvAddr, oneway, timeoutMills, requestHeader, body);
                             if (result != null) {
                                 registerBrokerResultList.add(result);
@@ -178,6 +189,7 @@ public class BrokerOuterAPI {
         final byte[] body
     ) throws RemotingCommandException, MQBrokerException, RemotingConnectException, RemotingSendRequestException, RemotingTimeoutException,
         InterruptedException {
+        // 这就是封装请求出来
         RemotingCommand request = RemotingCommand.createRequestCommand(RequestCode.REGISTER_BROKER, requestHeader);
         request.setBody(body);
 
@@ -190,7 +202,10 @@ public class BrokerOuterAPI {
             return null;
         }
 
+        // 真正发送网络请求的在这里
+        // remotingClient这个其实就是 nettyClient 发送网络请求出去的
         RemotingCommand response = this.remotingClient.invokeSync(namesrvAddr, request, timeoutMills);
+        // 下面就是封装请求返回的结果了，然后返回出去
         assert response != null;
         switch (response.getCode()) {
             case ResponseCode.SUCCESS: {

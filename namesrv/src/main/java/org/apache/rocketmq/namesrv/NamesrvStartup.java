@@ -41,8 +41,16 @@ import org.apache.rocketmq.srvutil.ServerUtil;
 import org.apache.rocketmq.srvutil.ShutdownHookThread;
 import org.slf4j.LoggerFactory;
 
+/**
+ * 最为关键的NameServer进程的启动类
+ */
 public class NamesrvStartup {
 
+    /**
+     * 下面的几个变量不用实际理解，但是可以猜测一下
+     * 根据变量名猜测 肯定是跟 日志、配置、命令行相关参数相关的
+     * 所以写代码，根据变量名可以猜到是什么意思很重要
+     */
     private static InternalLogger log;
     private static Properties properties = null;
     private static CommandLine commandLine = null;
@@ -54,6 +62,7 @@ public class NamesrvStartup {
     public static NamesrvController main0(String[] args) {
 
         try {
+            // NamesrvController用来接收网络请求的，是 NameServer中的核心组件
             NamesrvController controller = createNamesrvController(args);
             start(controller);
             String tip = "The Name Server boot success. serializeType=" + RemotingCommand.getSerializeTypeConfigInThisServer();
@@ -79,15 +88,22 @@ public class NamesrvStartup {
             return null;
         }
 
+        // 非常核心的两个类
+        // NamesrvConfig是nameserver运行的一些参数配置
+        // NettyServerConfig是接收网络请求的netty服务器的配置参数
         final NamesrvConfig namesrvConfig = new NamesrvConfig();
         final NettyServerConfig nettyServerConfig = new NettyServerConfig();
         nettyServerConfig.setListenPort(9876);
+        // 下面代码的意思就是 用 mqnamesrv启动的时候，带上了 "-c"这个选项
+        // -c 的意思是带上了一个配置文件的路径
+        // 然后就可以读取配置文件里的内容了
         if (commandLine.hasOption('c')) {
             String file = commandLine.getOptionValue('c');
             if (file != null) {
                 InputStream in = new BufferedInputStream(new FileInputStream(file));
                 properties = new Properties();
                 properties.load(in);
+                // 工具类，把读取到的配置放入这两个类中，直接覆盖
                 MixAll.properties2Object(properties, namesrvConfig);
                 MixAll.properties2Object(properties, nettyServerConfig);
 
@@ -98,6 +114,8 @@ public class NamesrvStartup {
             }
         }
 
+        // 就是 "-p"的选项，
+        // 很容易看出，就是打印相关的日志,把配置信息打印出来
         if (commandLine.hasOption('p')) {
             InternalLogger console = InternalLoggerFactory.getLogger(LoggerName.NAMESRV_CONSOLE_NAME);
             MixAll.printObjectProperties(console, namesrvConfig);
@@ -105,6 +123,7 @@ public class NamesrvStartup {
             System.exit(0);
         }
 
+        // 这就是把命令行中带上的配置选项，读取出来，然后覆盖到对应的类中
         MixAll.properties2Object(ServerUtil.commandLine2Properties(commandLine), namesrvConfig);
 
         if (null == namesrvConfig.getRocketmqHome()) {
@@ -112,6 +131,7 @@ public class NamesrvStartup {
             System.exit(-2);
         }
 
+        // 下面的几行代码都是打印日志相关的信息
         LoggerContext lc = (LoggerContext) LoggerFactory.getILoggerFactory();
         JoranConfigurator configurator = new JoranConfigurator();
         configurator.setContext(lc);

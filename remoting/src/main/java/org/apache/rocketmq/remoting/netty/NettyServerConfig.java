@@ -16,17 +16,32 @@
  */
 package org.apache.rocketmq.remoting.netty;
 
+/**
+ * 这个类就是配置 NettyServer的，接收broker和客户端的请求，然后进行处理
+ */
 public class NettyServerConfig implements Cloneable {
+    // 这是 netty默认的监听端口，实际上在上面已经被改了
     private int listenPort = 8888;
+    // 工作线程数
     private int serverWorkerThreads = 8;
+    // netty的public线程池的线程数
     private int serverCallbackExecutorThreads = 0;
+    // netty的IO线程池的线程数，这是负责解析网络请求的
+    // 这里的线程解析完网络请求后，就会把请求转发给work线程来处理
     private int serverSelectorThreads = 3;
+    // 下面两个是 broker端的参数
+    // 基于netty构建网络服务器的时候，会用到下面两个参数
     private int serverOnewaySemaphoreValue = 256;
     private int serverAsyncSemaphoreValue = 64;
+
+    // 如果一个网络连接空闲超过 120s，就会关闭
     private int serverChannelMaxIdleTimeSeconds = 120;
 
+    // socket send buffer缓冲区以及receive buffer缓冲区的大小
     private int serverSocketSndBufSize = NettySystemConfig.socketSndbufSize;
     private int serverSocketRcvBufSize = NettySystemConfig.socketRcvbufSize;
+
+    // bytebuffer是否开启缓存，默认开启
     private boolean serverPooledByteBufAllocatorEnable = true;
 
     /**
@@ -36,6 +51,7 @@ public class NettyServerConfig implements Cloneable {
      * ../glibc-2.10.1/configure \ --prefix=/usr \ --with-headers=/usr/include \
      * --host=x86_64-linux-gnu \ --build=x86_64-pc-linux-gnu \ --without-gd
      */
+    // 是否启动epoll IO模型，默认不开启
     private boolean useEpollNativeSelector = false;
 
     public int getListenPort() {
